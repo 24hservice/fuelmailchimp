@@ -46,23 +46,26 @@ class MailChimp
 
 		$merge_vars = array();
 
-		foreach ($list_config['merge_vars'] as $field => $options)
+		if(! empty($list_config['merge_vars']))
 		{
-			$value = \Cli::option($field, '');
-
-			if (isset($options['allowed_values']) and ! in_array($value, $options['allowed_values']))
+			foreach ($list_config['merge_vars'] as $field => $options)
 			{
-				if (isset($options['allowed_values'][$value]))
+				$value = \Cli::option($field, '');
+
+				if (isset($options['allowed_values']) and ! in_array($value, $options['allowed_values']))
 				{
-					$value = $options['allowed_values'][$value];
+					if (isset($options['allowed_values'][$value]))
+					{
+						$value = $options['allowed_values'][$value];
+					}
+					else
+					{
+						\Cli::write($field.' must be one of this value '.implode(', ', $options['allowed_values']));
+						exit;
+					}
 				}
-				else
-				{
-					\Cli::write($field.' must be one of this value '.implode(', ', $options['allowed_values']));
-					exit;
-				}
+				$merge_vars[$options['var']] = $value;
 			}
-			$merge_vars[$options['var']] = $value;
 		}
 
 		$mail_chimp = \FuelMailChimp\MailChimp::forge();

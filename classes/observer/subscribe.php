@@ -50,26 +50,29 @@ class Observer_Subscribe extends \Orm\Observer
 		if($want_subscribe_to_newsletter)
 		{
 			\Config::load('mailchimp', true);
-			$list_config = \Config::get('mailchimp.lists.'.$this->_list_name);
+			$list_config = \Config::get('mailchimp.lists.'.$this->_list_name, array());
 
 			$merge_vars = array();
 
-			foreach ($list_config['merge_vars'] as $field => $options)
+			if(! empty($list_config['merge_vars']))
 			{
-				$value = isset($model->$field) ? $model->$field : null;
-
-				if (isset($options['allowed_values']) and ! in_array($value, $options['allowed_values']))
+				foreach ($list_config['merge_vars'] as $field => $options)
 				{
-					if (isset($options['allowed_values'][$value]))
+					$value = isset($model->$field) ? $model->$field : null;
+
+					if (isset($options['allowed_values']) and ! in_array($value, $options['allowed_values']))
 					{
-						$value = $options['allowed_values'][$value];
+						if (isset($options['allowed_values'][$value]))
+						{
+							$value = $options['allowed_values'][$value];
+						}
+						else
+						{
+							throw new \Exception($field.' must be one of this value '.implode(', ', $options['allowed_values']));
+						}
 					}
-					else
-					{
-						throw new \Exception($field.' must be one of this value '.implode(', ', $options['allowed_values']));
-					}
+					$merge_vars[$options['var']] = $value;
 				}
-				$merge_vars[$options['var']] = $value;
 			}
 
 			$list->subscribe($model->{$this->_email_field}, $merge_vars);
