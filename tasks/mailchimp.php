@@ -21,35 +21,27 @@ class MailChimp
 
 	public static function lists_list()
 	{
-		\Config::load('mailchimp', true);
-		$api_key = \Config::get('mailchimp.api_key');
-		$mail_chimp = new \Drewm\MailChimp($api_key);
-		\Debug::dump($mail_chimp->call('lists/list'));
+		$mail_chimp = \FuelMailChimp\MailChimp::forge();
+
+		$result = $mail_chimp->lists()
+			->get_list();
+
+		static::_display_result($result);
 	}
 
 	public static function lists_members($name = null)
 	{
-		\Config::load('mailchimp', true);
-		$api_key = \Config::get('mailchimp.api_key');
-		$list_config = \Config::get('mailchimp.lists.'.$name, \Config::get('mailchimp.lists.default'));
-		$mail_chimp = new \Drewm\MailChimp($api_key);
-		$result = $mail_chimp->call('lists/members', array(
-			'id' => $list_config['id'],
-		));
+		$mail_chimp = \FuelMailChimp\MailChimp::forge();
 
+		$result = $mail_chimp->lists($name)
+			->get_members();
 
-		if (!empty($result['errors']))
-		{
-			static::_display_error($result);
-			exit;
-		}
-		\Debug::dump($result);
+		static::_display_result($result);
 	}
 
 	public static function lists_subscribe($email, $name = null)
 	{
 		\Config::load('mailchimp', true);
-		$api_key = \Config::get('mailchimp.api_key');
 		$list_config = \Config::get('mailchimp.lists.'.$name, \Config::get('mailchimp.lists.default'));
 
 		$merge_vars = array();
@@ -73,48 +65,23 @@ class MailChimp
 			$merge_vars[$options['var']] = $value;
 		}
 
+		$mail_chimp = \FuelMailChimp\MailChimp::forge();
 
+		$result = $mail_chimp->lists($name)
+			->subscribe($email, $merge_vars);
 
-		$mail_chimp = new \Drewm\MailChimp($api_key);
-		$result = $mail_chimp->call('lists/subscribe', array(
-			'id' => $list_config['id'],
-			'email' => array('email' => $email),
-			'merge_vars' => $merge_vars,
-			'double_optin' => false,
-			'update_existing' => true,
-			'replace_interests' => false,
-			'send_welcome' => false,
-		));
-
-		if (!empty($result['errors']))
-		{
-			static::_display_error($result);
-			exit;
-		}
-		\Debug::dump($result);
+		static::_display_result($result);
 	}
 
 	public static function lists_unsubscribe($email, $name = null)
 	{
-		\Config::load('mailchimp', true);
-		$api_key = \Config::get('mailchimp.api_key');
-		$list_config = \Config::get('mailchimp.lists.'.$name, \Config::get('mailchimp.lists.default'));
 
-		$mail_chimp = new \Drewm\MailChimp($api_key);
-		$result = $mail_chimp->call('lists/unsubscribe', array(
-			'id' => $list_config['id'],
-			'email' => array('email' => $email),
-			'delete_member' => false,
-			'send_goodbye' => true,
-			'send_notify' => true,
-		));
+		$mail_chimp = \FuelMailChimp\MailChimp::forge();
 
-		if (!empty($result['errors']))
-		{
-			static::_display_error($result);
-			exit;
-		}
-		\Debug::dump($result);
+		$result = $mail_chimp->lists($name)
+			->unsubscribe($email);
+
+		static::_display_result($result);
 	}
 
 	public static function lists_batch_subscribe($name = null)
@@ -158,30 +125,16 @@ class MailChimp
 			}
 		}
 
-		$mail_chimp = new \Drewm\MailChimp($api_key);
-		$result = $mail_chimp->call('lists/batch-subscribe', array(
-			'id' => $list_config['id'],
-			'batch' => $batch,
-			'double_optin' => false,
-			'update_existing' => true,
-			'replace_interests' => false,
-			'send_welcome' => false,
-		));
+		$mail_chimp = \FuelMailChimp\MailChimp::forge();
 
-		if (!empty($result['errors']))
-		{
-			static::_display_error($result);
-			exit;
-		}
-		\Debug::dump($result);
+		$result = $mail_chimp->lists($name)
+			->batch_subscribe($batch);
+
+		static::_display_result($result);
 	}
 
 	public static function lists_batch_unsubscribe($name = null)
 	{
-		\Config::load('mailchimp', true);
-		$api_key = \Config::get('mailchimp.api_key');
-		$list_config = \Config::get('mailchimp.lists.'.$name, \Config::get('mailchimp.lists.default'));
-
 		$users = \Model\User::query()->get();
 
 		$batch = array();
@@ -198,21 +151,22 @@ class MailChimp
 			}
 		}
 
-		$mail_chimp = new \Drewm\MailChimp($api_key);
-		$result = $mail_chimp->call('lists/batch-unsubscribe', array(
-			'id' => $list_config['id'],
-			'batch' => $batch,
-			'delete_member' => false,
-			'send_goodbye' => true,
-			'send_notify' => true,
-		));
+		$mail_chimp = \FuelMailChimp\MailChimp::forge();
 
+		$result = $mail_chimp->lists($name)
+			->batch_unsubscribe($batch);
+
+		static::_display_result($result);
+	}
+
+	protected static function _display_result($result)
+	{
 		if (!empty($result['errors']))
 		{
 			static::_display_error($result);
 			exit;
 		}
-		\Debug::dump($result);
+		\Cli::write(\Format::forge($result)->to_yaml());
 	}
 
 	protected static function _display_error($result)
@@ -221,7 +175,7 @@ class MailChimp
 		{
 			foreach ($result['errors'] as $error)
 			{
-				\Debug::dump($error);
+				\Cli::write(\Format::forge($error)->to_yaml());
 			}
 		}
 	}

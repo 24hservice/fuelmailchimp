@@ -1,6 +1,7 @@
 <?php
 
 return array(
+	/*
 	'api_key' => '',
 	'lists' => array(
 		'default' => array(
@@ -8,4 +9,5 @@ return array(
 			'merge_vars' => array(),
 		),
 	),
+	*/
 );

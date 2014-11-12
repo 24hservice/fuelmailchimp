@@ -1,5 +1,6 @@
 <?php
 
 Autoloader::add_classes(array(
-	//'FuelMailChimp\\Db'        => __DIR__.'/classes/db.php',
+	'FuelMailChimp\\MailChimp'        => __DIR__.'/classes/mailchimp.php',
+	'FuelMailChimp\\Lists'        => __DIR__.'/classes/lists.php',
 ));
